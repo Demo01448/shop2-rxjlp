@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>简易商店 - 最终版</title>
+  <style>
+
+    :root {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      box-sizing: border-box
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: inherit
+    }
+
+    body {
+      margin: 0;
+      color: #111;
+      background: url("bg.png") center top/cover no-repeat fixed, #f3f4f6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    header {
+      background: linear-gradient(90deg, #0ea5a4, #abffb2, #ff0000, #5c0064);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 16px
+    }
+
+    /* 三列网格，响应式折叠为 2/1 列 */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr; /* Only one column per row */
+      gap: 16px;
+      padding-bottom: 40px;
+      align-items: start;
+    }
+
+    @media (max-width:1000px) {
+      .grid {
+        grid-template-columns: 1fr; /* Still one column per row on smaller screens */
+      }
+    }
+
+
+    @media (max-width:640px) {
+      .grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(2, 6, 23, 0.12);
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    .card h3 {
+      margin: 6px 0 0;
+      font-size: 18px
+    }
+
+    .card p {
+      margin: 0;
+      color: #475569;
+      font-size: 14px
+    }
+
+    .price {
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 16px
+    }
+
+    button {
+      background: #0ea5a4;
+      border: 0;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer
+    }
+    #oop {
+      background: #ffffff;
+      border: 0;
+      color: rgb(0, 0, 0);
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer
+      
+    }
+
+    button.muted {
+      background: transparent;
+      border: 1px solid #e6eef2;
+      color: #475569
+    }
+
+    .cart-badge {
+      background: #ef4444;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 13px
+    }
+
+    footer {
+      margin: 24px 0;
+      text-align: center;
+      color: #64748b
+    }
+
+    /* carousel */
+    .carousel {
+      position: relative;
+      height: 220px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden
+    }
+
+    .carousel img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain; /* Ensure the image fits inside the container */
+        transform: scale(1); /* Fixed scale size */
+        transition: transform 0.5s ease; /* Optional transition for smoothness */
+      }
+
+    .nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.35);
+      color: white;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1
+    }
+
+    .prev {
+      left: 8px
+    }
+
+    .next {
+      right: 8px
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+      flex-wrap: wrap;
+      justify-content: space-between
+    }
+
+    .left-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center
+    }
+
+    .qr-holder {
+      margin-top: 8px;
+      min-height: 40px
+    }
+
+    /* overlay (pay image) */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px
+    }
+
+    .overlay-inner {
+      background: transparent;
+      border-radius: 8px;
+      max-width: 900px;
+      width: 100%;
+      text-align: center;
+      cursor: default
+    }
+
+    .overlay-inner img {
+      max-width: 90vw;
+      max-height: 80vh;
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6)
+    }
+
+    .overlay-text {
+      margin-top: 12px;
+      color: white;
+      font-size: 16px
+    }
+
+    /* cart modal */
+    .cart-view {
+      display: none;
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      width: 360px;
+      max-height: 80vh;
+      overflow: auto;
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 8px 40px rgba(2, 6, 23, 0.25);
+      z-index: 60
+    }
+
+    @media (max-width:640px) {
+      .cart-view {
+        left: 8px;
+        right: 8px;
+        width: auto
+      }
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px dashed #e6eef2
+    }
+
+    .small {
+      font-size: 13px;
+      color: #64748b
+    }
+    </style>
+</head>
+<!-- 添加在<body>结束标签之前 -->
+<div id="payOverlay" class="overlay" aria-hidden="true">
+  <div class="overlay-inner" role="dialog" aria-label="付款二维码">
+    <div><img src="./PayQrcode.png" alt=""></div>
+    <div class="overlay-text">付款后添加QQ发送该二维码</div>
+  </div>
+</div>
+
+<div id="qrOverlay" class="overlay" aria-hidden="true">
+  <div class="overlay-inner" role="dialog" aria-label="购买信息二维码">
+    <img id="finalQrImage" alt="购买信息二维码"> <!-- 添加这一行 -->
+    <div class="overlay-text">已生成购买二维码，请保存</div>
+  </div>
+</div>
+<body>
+  <header>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <h2 style="margin: 0; font-size: 18px;">资源购买-选商品-付款-获取返回二维码-加QQ发送</h2>
+      <small class="small" style="opacity: 0.95;">联系QQ: 3022956493--联系QQ: 3022956493--联系QQ: 3022956493--联系QQ: 3022956493</small>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div>购物车: <span id="cartCount" class="cart-badge">0</span></div>
+      <button id="toggleCartBtn">查看购物车</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="listView">
+      <h3>商品列表</h3>
+      <div style="padding: 20px;"><button id="oop" onclick="togglePage()">切换账号购买页</button></div>
+      <div id="productGrid" class="grid"></div>
+    </section>
+  </main>
+
+  <div id="cartView" class="cart-view">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 id="cartTitle" style="margin: 0;">购物车</h3>
+      <button id="closeCart" class="muted">关闭</button>
+    </div>
+    <div id="cartList" style="margin-top: 8px;"></div>
+    <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+      <div>总计: <strong id="cartTotal">¥0.00</strong></div>
+      <div style="display: flex; gap: 8px;">
+        <button id="clearCart" class="muted">清空购物车</button>
+        <button id="checkoutBtn">结算后请保存二维码</button>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script>
+  function togglePage() {
+    const currentPage = window.location.pathname;
+    if (currentPage.includes('index.html')) {
+      window.location.href = './index2.html';
+    } else {
+      window.location.href = './index.html';
+    }
+  }
+  
+    // 产品数据
+  const products = [
+    {id: 'P-1', title: '套餐 1', price: 15.00, desc: '看图描述', imgs: ['./1 (1).png']},
+    {id: 'P-2', title: '套餐 2', price: 10.00, desc: '看图描述', imgs: ['./1 (2).png']},
+    {id: 'P-3', title: '套餐 3', price: 14.00, desc: '看图描述', imgs: ['./1 (3).png']},
+    {id: 'P-4', title: '套餐 4', price: 14.00, desc: '看图描述', imgs: ['./1 (4).png']},
+    {id: 'P-5', title: '套餐 5', price: 25.00, desc: '看图描述', imgs: ['./1 (5).png']},
+    {id: 'P-6', title: '套餐 6', price: 42.00, desc: '看图描述', imgs: ['./1 (6).png']},
+    {id: 'P-7', title: '套餐 7', price: 52.00, desc: '看图描述', imgs: ['./1 (7).png']},
+    {
+        id: 'P-8', 
+        title: '单独买资源看这个',
+        basePrice: 10.00,
+        desc: '不同选项不同价格',
+        imgs: ['./66.jpg'],
+        // 选项配置 - 每个选项有自己的价格
+        options: [
+            { id: 'opt1', name: '全御神神迹精灵', price: 7.00 },
+            { id: 'opt2', name: '碎片999', price: 9.00 },
+            { id: 'opt3', name: '金币800W', price: 2.00 },
+            { id: 'opt4', name: '豆子1000', price: 2.00 },
+            { id: 'opt5', name: '金币+豆子', price: 3.00 },
+            { id: 'opt6', name: '满级果50个', price: 2.00 },
+            { id: 'opt7', name: '五星天赋石50个', price: 2.00 },
+            { id: 'opt8', name: '满级神力符文50个', price: 2.00 },
+            { id: 'opt9', name: 'max药水50个', price: 2.00 },
+            { id: 'opt10', name: '紫色随机符文50个', price: 2.00 },
+            { id: 'opt11', name: '圣石50个', price: 2.00 }
+        ]
+    }
+];
+
+  // 本地购物车
+  function loadCart() {
+    try {
+        return JSON.parse(localStorage.getItem('cart') || '[]');
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveCart(cart) {
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartBadge();
+    renderCart();
+}
+function showPayOverlayThen(callback) {
+    const overlay = document.getElementById('payOverlay');
+    overlay.style.display = 'flex';
+    
+    // 点击任意位置关闭弹窗
+    overlay.addEventListener('click', function handler(e) {
+      if (e.target === overlay) {
+        overlay.style.display = 'none';
+        overlay.removeEventListener('click', handler);
+        callback();
+      }
+    });
+  }
+
+  function showQrOverlayWithDownload(dataUrl) {
+    const overlay = document.getElementById('qrOverlay');
+    const img = document.getElementById('finalQrImage');
+    img.src = dataUrl;
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    
+    // 修复1：确保下载发生在图片加载后
+    setTimeout(() => {
+        // 修复2：使用Blob对象创建下载链接
+        const blob = dataURLtoBlob(dataUrl);
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'purchase_qrcode_' + Date.now() + '.png';
+        document.body.appendChild(a);
+        a.click();
+        
+        // 修复3：清理资源
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+    }, 300); // 给图片加载时间
+}
+
+// 新增辅助函数：将DataURL转换为Blob
+function dataURLtoBlob(dataurl) {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    
+    while(n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    
+    return new Blob([u8arr], {type: mime});
+}
+
+  // 修改init函数，添加事件绑定
+  function init() {
+    renderList();
+    updateCartBadge();
+    renderCart();
+    
+    // 绑定购物车按钮事件
+    document.getElementById('toggleCartBtn').addEventListener('click', () => {
+      document.getElementById('cartView').style.display = 'block';
+    });
+    
+    document.getElementById('closeCart').addEventListener('click', () => {
+      document.getElementById('cartView').style.display = 'none';
+    });
+    
+    document.getElementById('clearCart').addEventListener('click', () => {
+      saveCart([]);
+      renderCart();
+      updateCartBadge();
+    });
+  }
+function updateCartBadge() {
+    const cart = loadCart();
+    const count = cart.reduce((total, item) => total + item.qty, 0);
+    document.getElementById('cartCount').textContent = count;
+}
+
+// 创建产品卡片
+function createProductCard(p) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    
+    // 产品图片轮播
+    const carousel = document.createElement('div');
+    carousel.className = 'carousel';
+    
+    // 创建主图片
+    const img = document.createElement('img');
+    img.src = p.imgs[0];
+    img.alt = p.title;
+    carousel.appendChild(img);
+    
+    // 如果有多张图片，添加导航按钮
+    if (p.imgs && p.imgs.length > 1) {
+        const prev = document.createElement('button');
+        prev.className = 'nav prev';
+        prev.textContent = '‹';
+        
+        const next = document.createElement('button');
+        next.className = 'nav next';
+        next.textContent = '›';
+        
+        let idx = 0;
+        prev.addEventListener('click', () => {
+            idx = (idx - 1 + p.imgs.length) % p.imgs.length;
+            img.src = p.imgs[idx];
+        });
+        
+        next.addEventListener('click', () => {
+            idx = (idx + 1) % p.imgs.length;
+            img.src = p.imgs[idx];
+        });
+        
+        carousel.appendChild(prev);
+        carousel.appendChild(next);
+    }
+    
+    card.appendChild(carousel);
+    
+    // 产品标题和描述
+    const title = document.createElement('h3');
+    title.textContent = p.title;
+    card.appendChild(title);
+    
+    const desc = document.createElement('p');
+    desc.textContent = p.desc;
+    card.appendChild(desc);
+    
+    // 操作区域（价格、数量、加入购物车）
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    
+    const leftDiv = document.createElement('div');
+    leftDiv.className = 'left-actions';
+    
+    // 特殊处理商品8（带选项的商品）
+    if (p.id === 'P-8') {
+        // 创建选项选择器
+        const select = document.createElement('select');
+        select.style.width = '100%';
+        select.style.padding = '8px';
+        select.style.borderRadius = '4px';
+        select.style.border = '1px solid #ddd';
+        
+        // 创建选项价格显示区域
+        const priceDisplay = document.createElement('div');
+        priceDisplay.className = 'price';
+        priceDisplay.style.marginTop = '8px';
+        
+        // 添加选项到选择器
+        p.options.forEach((option, index) => {
+            const optionElem = document.createElement('option');
+            optionElem.value = option.id;
+            optionElem.dataset.price = option.price;
+            optionElem.textContent = `${option.name} - ¥${option.price.toFixed(2)}`;
+            select.appendChild(optionElem);
+            
+            // 默认显示第一个选项的价格
+            if (index === 0) {
+                priceDisplay.textContent = '¥' + option.price.toFixed(2);
+            }
+        });
+        
+        // 选项改变时更新价格
+        select.addEventListener('change', () => {
+            const selectedOption = select.options[select.selectedIndex];
+            const price = parseFloat(selectedOption.dataset.price);
+            priceDisplay.textContent = '¥' + price.toFixed(2);
+        });
+        
+        const addBtn = document.createElement('button');
+        addBtn.textContent = '加入购物车';
+        addBtn.className = 'add-btn';
+        
+        addBtn.addEventListener('click', () => {
+            const selectedOptionId = select.value;
+            const selectedOption = p.options.find(opt => opt.id === selectedOptionId);
+            
+            if (!selectedOption) return;
+            
+            const cart = loadCart();
+            const itemIndex = cart.findIndex(item => 
+                item.id === p.id && item.optionId === selectedOptionId);
+            
+            if (itemIndex === -1) {
+                cart.push({
+                    ...p,
+                    optionId: selectedOptionId,
+                    optionName: selectedOption.name,
+                    price: selectedOption.price,
+                    qty: 1
+                });
+            } else {
+                cart[itemIndex].qty += 1;
+            }
+            
+            saveCart(cart);
+            alert(`${p.title} (${selectedOption.name}) 已加入购物车`);
+        });
+        
+        leftDiv.appendChild(select);
+        leftDiv.appendChild(priceDisplay);
+        actions.appendChild(leftDiv);
+        
+        const rightDiv = document.createElement('div');
+        rightDiv.style.display = 'flex';
+        rightDiv.style.alignItems = 'center';
+        rightDiv.style.gap = '8px';
+        
+        const qtyInput = document.createElement('input');
+        qtyInput.type = 'number';
+        qtyInput.value = '1';
+        qtyInput.min = '1';
+        qtyInput.className = 'qty-input';
+        
+        rightDiv.appendChild(qtyInput);
+        rightDiv.appendChild(addBtn);
+        actions.appendChild(rightDiv);
+    } 
+    // 其他商品（带数量选择）
+    else {
+        const price = document.createElement('div');
+        price.className = 'price';
+        price.textContent = '¥' + p.price.toFixed(2);
+        leftDiv.appendChild(price);
+        actions.appendChild(leftDiv);
+        
+        const rightDiv = document.createElement('div');
+        rightDiv.style.display = 'flex';
+        rightDiv.style.alignItems = 'center';
+        rightDiv.style.gap = '8px';
+        
+        const qtyInput = document.createElement('input');
+        qtyInput.type = 'number';
+        qtyInput.value = '1';
+        qtyInput.min = '1';
+        qtyInput.className = 'qty-input';
+        
+        const addBtn = document.createElement('button');
+        addBtn.textContent = '加入购物车';
+        addBtn.className = 'add-btn';
+        
+        addBtn.addEventListener('click', () => {
+            const qty = parseInt(qtyInput.value);
+            const cart = loadCart();
+            const itemIndex = cart.findIndex(item => item.id === p.id);
+            
+            if (itemIndex === -1) {
+                cart.push({...p, qty});
+            } else {
+                cart[itemIndex].qty += qty;
+            }
+            
+            saveCart(cart);
+            alert(`${p.title} 已加入购物车`);
+        });
+        
+        rightDiv.appendChild(qtyInput);
+        rightDiv.appendChild(addBtn);
+        actions.appendChild(rightDiv);
+    }
+    
+    card.appendChild(actions);
+    
+    return card;
+}
+
+// 渲染产品列表
+function renderList() {
+    const grid = document.getElementById('productGrid');
+    grid.innerHTML = '';
+    
+    products.forEach(product => {
+        const card = createProductCard(product);
+        grid.appendChild(card);
+    });
+}
+
+// 渲染购物车
+function renderCart() {
+    const cart = loadCart();
+    const cartList = document.getElementById('cartList');
+    const cartTotal = document.getElementById('cartTotal');
+    
+    // 清空当前购物车列表
+    cartList.innerHTML = '';
+    
+    // 计算总金额
+    let total = 0;
+    
+    // 遍历购物车项目
+    cart.forEach((item, index) => {
+        // 计算单项总价
+        const itemTotal = item.price * item.qty;
+        total += itemTotal;
+        
+        // 创建购物车项元素
+        const cartItem = document.createElement('div');
+        cartItem.className = 'cart-item';
+        
+        // 显示商品信息（含选项）
+        const itemInfo = document.createElement('div');
+        itemInfo.className = 'item-info';
+        
+        const title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = item.title;
+        itemInfo.appendChild(title);
+        
+        if (item.optionName) {
+            const option = document.createElement('div');
+            option.className = 'option';
+            option.textContent = `选项: ${item.optionName}`;
+            itemInfo.appendChild(option);
+        }
+        
+        const price = document.createElement('div');
+        price.className = 'price';
+        price.textContent = `¥${item.price.toFixed(2)} × ${item.qty}`;
+        itemInfo.appendChild(price);
+        
+        // 创建数量控制和删除按钮
+        const itemControls = document.createElement('div');
+        itemControls.className = 'item-controls';
+        
+        // 减少数量按钮
+        const decBtn = document.createElement('button');
+        decBtn.className = 'qty-btn';
+        decBtn.textContent = '-';
+        decBtn.onclick = () => {
+            if (item.qty > 1) {
+                cart[index].qty--;
+            } else {
+                cart.splice(index, 1);
+            }
+            saveCart(cart);
+        };
+        
+        // 显示数量
+        const qtyDisplay = document.createElement('span');
+        qtyDisplay.textContent = item.qty;
+        
+        // 增加数量按钮
+        const incBtn = document.createElement('button');
+        incBtn.className = 'qty-btn';
+        incBtn.textContent = '+';
+        incBtn.onclick = () => {
+            cart[index].qty++;
+            saveCart(cart);
+        };
+        
+        // 删除按钮
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.textContent = '×';
+        delBtn.onclick = () => {
+            cart.splice(index, 1);
+            saveCart(cart);
+        };
+        
+        // 组装控件
+        itemControls.appendChild(decBtn);
+        itemControls.appendChild(qtyDisplay);
+        itemControls.appendChild(incBtn);
+        itemControls.appendChild(delBtn);
+        
+        // 组装购物车项
+        cartItem.appendChild(itemInfo);
+        cartItem.appendChild(itemControls);
+        
+        // 添加到购物车列表
+        cartList.appendChild(cartItem);
+    });
+    
+    // 更新总金额
+    cartTotal.textContent = `¥${total.toFixed(2)}`;
+    
+    // 如果没有商品，显示提示
+    if (cart.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.textContent = '购物车是空的';
+        emptyMsg.style.textAlign = 'center';
+        emptyMsg.style.padding = '20px';
+        emptyMsg.style.color = '#777';
+        cartList.appendChild(emptyMsg);
+    }
+}
+
+// 结算按钮事件处理
+document.getElementById('checkoutBtn').addEventListener('click', () => {
+    const cart = loadCart();
+    if (cart.length === 0) {
+        alert('购物车为空');
+        return;
+    }
+    
+    const purchase = {
+        purchaseId: 'B-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
+        items: cart.map(item => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            qty: item.qty,
+            ...(item.optionId && { 
+                optionId: item.optionId,
+                optionName: item.optionName 
+            })
+        })),
+        total: cart.reduce((sum, item) => sum + item.price * item.qty, 0),
+        createdAt: new Date().toISOString()
+    };
+
+    // 显示付款二维码
+    showPayOverlayThen(async () => {
+        try {
+            // 保存购买记录
+            const history = JSON.parse(localStorage.getItem('purchaseHistory') || '[]');
+            history.push(purchase);
+            localStorage.setItem('purchaseHistory', JSON.stringify(history));
+        } catch (e) {
+            console.error('保存购买记录失败', e);
+        }
+
+        // 清空购物车
+        saveCart([]);
+
+        try {
+            // 生成购买信息二维码
+            const dataUrl = await QRCode.toDataURL(JSON.stringify(purchase), {
+                errorCorrectionLevel: 'M',
+                margin: 2,
+                width: 300
+            });
+            showQrOverlayWithDownload(dataUrl);
+        } catch (err) {
+            console.error('二维码生成失败:', err);
+            alert('二维码生成失败：' + err.message);
+        }
+    });
+});
+
+// 初始化
+function init() {
+    renderList();
+    updateCartBadge();
+    renderCart();
+
+    // 绑定购物车按钮事件
+    const toggleCartBtn = document.getElementById('toggleCartBtn');
+    const closeCartBtn = document.getElementById('closeCart');
+    const clearCartBtn = document.getElementById('clearCart');
+
+    toggleCartBtn.addEventListener('click', () => {
+        document.getElementById('cartView').style.display = 'block';
+    });
+
+    closeCartBtn.addEventListener('click', () => {
+        document.getElementById('cartView').style.display = 'none';
+    });
+
+    clearCartBtn.addEventListener('click', () => {
+        saveCart([]);
+        renderCart();
+        updateCartBadge();
+    });
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
