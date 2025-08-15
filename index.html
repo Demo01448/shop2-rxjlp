@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>简易商店 - 最终版</title>
+  <title>精灵派资源购买页</title>
   <style>
 
     :root {
@@ -250,6 +250,19 @@
         width: auto
       }
     }
+    /* payOverlay 上的金额显示样式 */
+.overlay-inner .overlay-amount {
+  color: white;
+  font-size: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.overlay-inner .overlay-amount strong {
+  font-size: 20px;
+  letter-spacing: 0.5px;
+}
 
     .cart-item {
       display: flex;
@@ -268,15 +281,20 @@
 <!-- 添加在<body>结束标签之前 -->
 <div id="payOverlay" class="overlay" aria-hidden="true">
   <div class="overlay-inner" role="dialog" aria-label="付款二维码">
-    <div><img src="./PayQrcode.png" alt=""></div>
-    <div class="overlay-text">付款后添加QQ发送该二维码</div>
+    <!-- 显示应付金额 -->
+    <div class="overlay-amount" aria-hidden="false" style="margin-bottom:12px;">
+      应付金额: <strong id="payAmount">¥0.00</strong>
+    </div>
+    <div><img src="./PayQrcode.png" alt="付款二维码"></div>
+    <div class="overlay-text">在付款页备注信息</div>
   </div>
 </div>
+
 
 <div id="qrOverlay" class="overlay" aria-hidden="true">
   <div class="overlay-inner" role="dialog" aria-label="购买信息二维码">
     <img id="finalQrImage" alt="购买信息二维码"> <!-- 添加这一行 -->
-    <div class="overlay-text">已生成购买二维码，请保存</div>
+    <div class="overlay-text">已生成返回二维码</div>
   </div>
 </div>
 <body>
@@ -294,7 +312,6 @@
   <main class="container">
     <section id="listView">
       <h3>商品列表</h3>
-      <div style="padding: 20px;"><button id="oop" onclick="togglePage()">切换账号购买页</button></div>
       <div id="productGrid" class="grid"></div>
     </section>
   </main>
@@ -773,7 +790,7 @@ document.getElementById('checkoutBtn').addEventListener('click', () => {
         alert('购物车为空');
         return;
     }
-    
+
     const purchase = {
         purchaseId: 'B-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
         items: cart.map(item => ({
@@ -789,6 +806,12 @@ document.getElementById('checkoutBtn').addEventListener('click', () => {
         total: cart.reduce((sum, item) => sum + item.price * item.qty, 0),
         createdAt: new Date().toISOString()
     };
+
+    // 在显示付款弹窗前，把应付金额写入弹窗
+    const payAmountEl = document.getElementById('payAmount');
+    if (payAmountEl) {
+        payAmountEl.textContent = '¥' + purchase.total.toFixed(2);
+    }
 
     // 显示付款二维码
     showPayOverlayThen(async () => {
@@ -818,7 +841,6 @@ document.getElementById('checkoutBtn').addEventListener('click', () => {
         }
     });
 });
-
 // 初始化
 function init() {
     renderList();
